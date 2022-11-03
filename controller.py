@@ -1,49 +1,107 @@
 #!/usr/bin/env python3
 
-from re import L
+'''
+*****************************************************************************************
+*
+*        		===============================================
+*           		    HolA Bot (HB) Theme (eYRC 2022-23)
+*        		===============================================
+*
+*  This script should be used to implement Task 0 of HolA Bot (HB) Theme (eYRC 2022-23).
+*
+*  This software is made available on an "AS IS WHERE IS BASIS".
+*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
+*  any and all claim(s) that emanate from the use of the Software or
+*  breach of the terms of this agreement.
+*
+*****************************************************************************************
+'''
+
+# Team ID:		[ Team-ID ]
+# Author List:		[ Names of team members worked on this file separated by Comma: Name1, Name2, ... ]
+# Filename:		feedback.py
+# Functions:
+#			[ Comma separated list of functions in this file ]
+# Nodes:		Add your publishing and subscribing node
+
+
+################### IMPORT MODULES #######################
+
 import rospy
+import signal		# To handle Signals by OS/user
+import sys		# To handle Signals by OS/user
 
-# publishing to /cmd_vel with msg type: Twist
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Wrench		# Message type used for publishing force vectors
+from geometry_msgs.msg import PoseArray	# Message type used for receiving goals
+from geometry_msgs.msg import Pose2D		# Message type used for receiving feedback
 
-# subscribing to /odom with msg type: Odometry
-from nav_msgs.msg import Odometry
+import time
+import math		# If you find it useful
 
-# for finding sin() cos() 
-import math
+from tf.transformations import euler_from_quaternion	# Convert angles
 
-# Odometry is given as a quaternion, but for the controller we'll need to find the orientaion theta by converting to euler angle
-from tf.transformations import euler_from_quaternion
+################## GLOBAL VARIABLES ######################
 
-from geometry_msgs.msg import PoseArray
+PI = 3.14
 
+x_goals = [50]
+y_goals = [350]
+theta_goals =  [0]
 
+right_wheel_pub = None
+left_wheel_pub = None
+front_wheel_pub = None
+
+d = 0.17483
+
+kp = 1
 hola_x = 0
 hola_y = 0
 hola_theta = 0
 
-#desired goals
-x_goals = [1, -1, -1, 1, 0]
-y_goals = [1, 1, -1, -1, 0]
-# theta_goals = [1.2,2.3,3.1,2.3]
-theta_goals = [math.pi/4, 3*math.pi/4, -3*math.pi/4, -math.pi/4, 0]
+# vel_x = 0
+# vel_y = 0
+# vel_z = 0
+
+front_wheel = Wrench()
+right_wheel = Wrench()
+left_wheel = Wrench()
+
+# vel = Twist()
 
 
-def odometryCb(msg):
-	global hola_x, hola_y, hola_theta
+right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
+front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
+left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
-	hola_x = msg.pose.pose.position.x
-	hola_y = msg.pose.pose.position.y
-	q1 = msg.pose.pose.orientation.x
-	q2 = msg.pose.pose.orientation.y
-	q3 = msg.pose.pose.orientation.z
-	q4 = msg.pose.pose.orientation.w
-	q = (q1,q2,q3,q4)
-	hola_theta = euler_from_quaternion(q)[2]
+# pub = rospy.Publisher('/cmd_vel',Twist,queue_size=10)
 
-def task1_goals_Cb(msg):
+
+##################### FUNCTION DEFINITIONS #######################
+
+# NOTE :  You may define multiple helper functions here and use in your code
+
+def signal_handler(sig, frame):
+	  
+	# NOTE: This function is called when a program is terminated by "Ctr+C" i.e. SIGINT signal 	
+	print('Clean-up !')
+	cleanup()
+	sys.exit(0)
+
+def cleanup():
+	pass
+	############ ADD YOUR CODE HERE ############
+
+	# INSTRUCTIONS & HELP : 
+	#	-> Not mandatory - but it is recommended to do some cleanup over here,
+	#	   to make sure that your logic and the robot model behaves predictably in the next run.
+
+	############################################
+  
+  
+def task2_goals_Cb(msg):
 	global x_goals, y_goals, theta_goals
-
 	x_goals.clear()
 	y_goals.clear()
 	theta_goals.clear()
@@ -57,81 +115,266 @@ def task1_goals_Cb(msg):
 		theta_goal = euler_from_quaternion (orientation_list)[2]
 		theta_goals.append(theta_goal)
 
+def aruco_feedback_Cb(msg):
+	global hola_x,hola_y,hola_theta
+	hola_x = msg.x
+	hola_y = msg.y
+	hola_theta = msg.theta
+	############ ADD YOUR CODE HERE ############
+
+	# INSTRUCTIONS & HELP : 
+	#	-> Receive & store the feedback / coordinates found by aruco detection logic.
+	#	-> This feedback plays the same role as the 'Odometry' did in the previous task.
+
+	############################################
+
+
+def inverse_kinematics(error_x,error_y,error_theta,hola_theta):
+	pass
+		# global vel_x,vel_y,vel_z
+
+		# #velocity in global frame
+		# vel_x_g = kp*error_x
+		# vel_y_g = kp*error_y
+		# vel_z_g = kp*error_theta
+		
+
+		#velocity in body frame
+		# vel_x = vel_x_g*math.cos(hola_theta)+vel_y_g*math.sin(hola_theta)
+		# vel_y = -vel_x_g*math.sin(hola_theta)+vel_y_g*math.cos(hola_theta)
+		# vel_z = vel_z_g
+
+		#publishing velocity
+		# vel.linear.x =vel_x
+		# vel.linear.y = vel_y
+		# vel.angular.z = vel_z
+		# pub.publish(vel)
+
+		# body velocity to wheel velocity
+		# vel_front_wheel = -d*vel_z + vel_x
+		# vel_right_wheel = -d*vel_z + -math.cos(60)*vel_x + -math.sin(60)*vel_y
+		# vel_left_wheel = -d*vel_z + -math.cos(60)*vel_x + math.sin(60)*vel_y
+
+		
+
+		# front_wheel.force.x = vel_front_wheel
+		# right_wheel.force.x = vel_right_wheel
+		# left_wheel.force.x = vel_left_wheel
+
+		# front_wheel_pub.publish(front_wheel)
+		# right_wheel_pub.publish(right_wheel)
+		# left_wheel_pub.publish(left_wheel)
+
+		# print(vel_front_wheel)
+		# print(vel_right_wheel)
+		# print(vel_left_wheel)
+
+		# print("))))))))))))))))))))")
+
+		# print(hola_x)
+		# print(hola_y)
+		# print(hola_theta)
+
+	############ ADD YOUR CODE HERE ############
+
+	# INSTRUCTIONS & HELP : 
+	#	-> Use the target velocity you calculated for the robot in previous task, and
+	#	Process it further to find what proportions of that effort should be given to 3 individuals wheels !!
+	#	Publish the calculated efforts to actuate robot by applying force vectors on provided topics
+	############################################
+
 
 def main():
 
-	rospy.init_node('controller',anonymous=True)
+	rospy.init_node('controller_node')
 
-	pub = rospy.Publisher('/cmd_vel',Twist,queue_size=10)
-	sub = rospy.Subscriber('/odom',Odometry,odometryCb)
+	signal.signal(signal.SIGINT, signal_handler)
 
-	# declare that the node subscribes to task1_goals along with the other declarations of publishing and subscribing
-	rospy.Subscriber('task1_goals', PoseArray, task1_goals_Cb)
+	# NOTE: You are strictly NOT-ALLOWED to use "cmd_vel" or "odom" topics in this task
+	#	Use the below given topics to generate motion for the robot.
+	# right_wheel_pub = rospy.Publisher('/right_wheel_force', Wrench, queue_size=10)
+	# front_wheel_pub = rospy.Publisher('/front_wheel_force', Wrench, queue_size=10)
+	# left_wheel_pub = rospy.Publisher('/left_wheel_force', Wrench, queue_size=10)
 
-	vel = Twist()
+	right_wheel_pub.publish()
 
-	#initalise the required variables to 0
-
+	rospy.Subscriber('detected_aruco',Pose2D,aruco_feedback_Cb)
+	rospy.Subscriber('task2_goals',PoseArray,task2_goals_Cb)
+	
 	rate = rospy.Rate(100)
 
-	#desired goal
-	# x_d = 7
-	# y_d = 9
-	# theta_d = 3.14
+	############ ADD YOUR CODE HERE ############
 
-
-	#kp value
-	kp = 1
+	# INSTRUCTIONS & HELP : 
+	#	-> Make use of the logic you have developed in previous task to go-to-goal.
+	#	-> Extend your logic to handle the feedback that is in terms of pixels.
+	#	-> Tune your controller accordingly.
+	# 	-> In this task you have to further implement (Inverse Kinematics!)
+	#      find three omni-wheel velocities (v1, v2, v3) = left/right/center_wheel_force (assumption to simplify)
+	#      given velocity of the chassis (Vx, Vy, W)
+	#	   
 
 	index = 0
-	
 	while not rospy.is_shutdown():
 		
+		# Calculate Error from feedback
 		#errors in global frame
-		x = x_goals[index] - hola_x
-		y = y_goals[index] - hola_y
-		theta = theta_goals[index] - hola_theta
+		error_g_x = abs(x_goals[index] - hola_x)
+		error_g_y = abs(y_goals[index] - hola_y)
+		error_g_theta = theta_goals[index] - hola_theta
 
-		#error in body frame
-		vel_x = x*math.cos(hola_theta)+y*math.sin(hola_theta)
-		vel_y = -x*math.sin(hola_theta)+y*math.cos(hola_theta)
-		vel_z = theta
+		error_b_x = error_g_x*math.cos(hola_theta) + error_g_y*math.sin(hola_theta)
+		error_b_y = -error_g_x*math.sin(hola_theta) + error_g_y*math.cos(hola_theta)
+		error_b_theta = error_g_theta
 
-		#proprtional controller for velocity
-		# vel_x = kp*x
-		# vel_y = kp*y
-		# vel_z = kp*z
+		vel_x = kp * error_b_x
+		vel_y = kp * error_b_y
+		vel_z = kp * error_b_theta
 
-		#publish velocity
-		vel.linear.x = kp*vel_x
-		vel.linear.y = kp*vel_y
-		vel.angular.z = kp*vel_z
-		pub.publish(vel)
+		vel_front_wheel = -d*vel_z + vel_x
+		vel_right_wheel = -d*vel_z + (-math.cos(60)*vel_x) + (-math.sin(60)*vel_y)
+		vel_left_wheel = -d*vel_z + (-math.cos(60)*vel_x) + math.sin(60)*vel_y
+
+		front_wheel.force.x = vel_front_wheel
+		right_wheel.force.x = vel_right_wheel
+		left_wheel.force.x = vel_left_wheel
+
+		front_wheel_pub.publish(front_wheel)
+		right_wheel_pub.publish(right_wheel)
+		left_wheel_pub.publish(left_wheel)
+
+		print("error_x",error_b_x)
+		print("error_y",error_b_y)
+		print("error_theta",error_b_theta)
+
+		print("x:",hola_x)
+		print("y:",hola_y)
+		print("theta:",hola_theta)
+
+
+		# inverse_kinematics(x,y,theta,hola_theta)
+		
+
+		# Change the frame by using Rotation Matrix (If you find it required)
+
+		# Calculate the required velocity of bot for the next iteration(s)
+		
+		# Find the required force vectors for individual wheels from it.(Inverse Kinematics)
+
+		# Apply appropriate force vectors
+
+		# Modify the condition to Switch to Next goal (given position in pixels instead of meters)
 
 		rate.sleep()
 
-		print("error x:",round(x,2))
-		print("error y:",round(y,2))
-		print("error theta:",round(theta,2))
+		if -0.04<=vel_x<=0.04:
+			vel_x = 0
+			
+			vel_front_wheel = -d*vel_z + vel_x
+			vel_right_wheel = -d*vel_z + (-math.cos(60)*vel_x) + (-math.sin(60)*vel_y)
+			vel_left_wheel = -d*vel_z + (-math.cos(60)*vel_x) + math.sin(60)*vel_y
 
+			front_wheel.force.x = vel_front_wheel
+			right_wheel.force.x = vel_right_wheel
+			left_wheel.force.x = vel_left_wheel
 
-		if round(x,1) == 0 and round(y,1) == 0 and round(theta,1) == 0:
-			print("goal reached",round(hola_x,2),round(hola_y,2),round(hola_theta,2))
-			rospy.sleep(1.1)
-
-			# if index < len(x_goals):
-			# 	index+=1
-			# else:
-			# 	break
-				
+			front_wheel_pub.publish(front_wheel)
+			right_wheel_pub.publish(right_wheel)
+			left_wheel_pub.publish(left_wheel)
+			
 		
-	
+
+		if -0.04<=vel_y<=0.04:
+			vel_y = 0
+			vel_front_wheel = -d*vel_z + vel_x
+			vel_right_wheel = -d*vel_z + (-math.cos(60)*vel_x) + (-math.sin(60)*vel_y)
+			vel_left_wheel = -d*vel_z + (-math.cos(60)*vel_x) + math.sin(60)*vel_y
+
+			front_wheel.force.x = vel_front_wheel
+			right_wheel.force.x = vel_right_wheel
+			left_wheel.force.x = vel_left_wheel
+
+			front_wheel_pub.publish(front_wheel)
+			right_wheel_pub.publish(right_wheel)
+			left_wheel_pub.publish(left_wheel)
+
+		if -0.004<=vel_z<=0.004:
+			vel_z = 0
+			vel_front_wheel = -d*vel_z + vel_x
+			vel_right_wheel = -d*vel_z + (-math.cos(60)*vel_x) + (-math.sin(60)*vel_y)
+			vel_left_wheel = -d*vel_z + (-math.cos(60)*vel_x) + math.sin(60)*vel_y
+
+			front_wheel.force.x = vel_front_wheel
+			right_wheel.force.x = vel_right_wheel
+			left_wheel.force.x = vel_left_wheel
+
+			front_wheel_pub.publish(front_wheel)
+			right_wheel_pub.publish(right_wheel)
+			left_wheel_pub.publish(left_wheel)
+			
+
+		if front_wheel.force.x == 0 and right_wheel.force.x == 0 and left_wheel.force.x == 0:
+			print("Goal reached !!!!!")
+			rospy.sleep(1)
 
 
 
+		# if x_goals[index]-0.5<=hola_x<=x_goals[index]+0.50 and y_goals[index]-0.50<=hola_y<=y_goals[index]+0.50:
+		# 	front_wheel.force.x =  0
+		# 	front_wheel_pub.publish(front_wheel)
+		# 	right_wheel.force.x = 0
+		# 	right_wheel_pub.publish(right_wheel)
+		# 	left_wheel.force.x = 0
+		# 	left_wheel_pub.publish(left_wheel)
+			
+		
+
+		# if -0.04<=error_b_y<=0.04:
+		# 	right_wheel.force.x = 0
+		# 	right_wheel_pub.publish(right_wheel)
+			
+
+		# if -0.004<=error_b_theta<=0.004:
+		# 	left_wheel.force.x = 0
+		# 	left_wheel_pub.publish(left_wheel)
+			
+			
+
+		# if front_wheel.force.x == 0 and left_wheel.force.x == 0 and right_wheel.force.x == 0:
+		# 	print("Goal reached !!!!!")
+		# 	rospy.sleep(1)
+
+		# if -0.04<=vel_x<=0.04:
+		# 	vel.linear.x =  0
+		# 	pub.publish(vel)
+			
+		
+
+		# if -0.04<=vel_y<=0.04:
+		# 	vel.linear.y = 0
+		# 	pub.publish(vel)
+			
+
+		# if -0.004<=vel_z<=0.004:
+		# 	vel.angular.z = 0
+		# 	pub.publish(vel)
+			
+			
+
+		# if vel.linear.x == 0 and vel.linear.y == 0 and vel.angular.z == 0:
+		# 	print("Goal reached !!!!!")
+		# 	rospy.sleep(1)
+
+			
+
+			if index < len(x_goals)-1:
+					index += 1
+
+    ############################################
 
 if __name__ == "__main__":
 	try:
 		main()
 	except rospy.ROSInterruptException:
 		pass
+
